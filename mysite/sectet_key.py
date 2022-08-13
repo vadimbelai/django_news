@@ -1,0 +1,1 @@
+top_secret = 'django-insecure-@^&6%z2)u3egk!3&zu))mmfufshj&*#)l(+2&evkd+!6(ro#c%'
