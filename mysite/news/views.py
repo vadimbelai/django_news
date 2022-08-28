@@ -6,24 +6,68 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 
 from .models import News, Category
-from .forms import NewsForms
+from .forms import NewsForms, UserRegisterForm, UserLoginForm, ContactForm
 from .utils import MyMixin
+from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.core.mail import send_mail
+
+from sectet_key import mail_address
 
 # Create your views here.
 
-def test(request):
-    objects = ['john', 'paul2', 'george3', 'ringo4', 'john5', 'paul6', 'george7']
-    paginator = Paginator(objects, 2)
-    page_num = request.GET.get('page',10)
-    page_objects = paginator.get_page(page_num)
-    return render(request, 'news/test.html', {'page_obj': page_objects})
+def register(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Регистрация прошла успешно!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Ошибка регистрации')
+    else:
+        form = UserRegisterForm()
+    return render(request, 'news/register.html', {"form": form})
+
+def user_login(request):
+    if request.method == 'POST':
+        form = UserLoginForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserLoginForm()
+    return render(request, 'news/login.html', {'form': form})
+
+def user_logout(request):
+    logout(request)
+    return redirect('login')
+
+def contact(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            mail_factor = send_mail(form.cleaned_data['subject'], form.cleaned_data['content'], mail_address, [mail_address], fail_silently=False)
+            if mail_factor:
+                messages.success(request, 'Отправлено!')
+                return redirect('contact')
+            else:
+                messages.error((request, 'Ошибка отправки'))
+        else:
+            messages.error(request, 'Ошибка регистрации')
+    else:
+        form = ContactForm()
+    return render(request, 'news/test.html', {'form': form})
 
 class HomeNews(MyMixin, ListView):
     model = News
     template_name = 'news/home_news_list.html'
     context_object_name = 'news'
     #extra_context = {'title': 'Главная'}
-    mixin_prop = 'hello world'
+    #mixin_prop = 'hello world'
+    paginate_by = 2
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -37,6 +81,7 @@ class NewsByCategory(MyMixin, ListView):
     model = News
     template_name = 'news/home_news_list.html'
     context_object_name = 'news'
+    paginate_by = 2
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
